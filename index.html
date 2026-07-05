@@ -206,7 +206,7 @@
 <div id="confetti"></div>
 <div id="cheer">⭐</div>
 <div id="speechBubble"></div>
-<div id="appVersion">v0.08</div>
+<div id="appVersion">v0.09</div>
 
 <script>
 /* ============================================================
@@ -611,12 +611,6 @@ function checkGuess(a, btn){
 }
 
 playSoundBtn.addEventListener('click', () => { if(currentAnimal) playSound(currentAnimal); });
-
-if('serviceWorker' in navigator){
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  });
-}
 </script>
 </body>
 </html>
