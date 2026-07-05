@@ -426,11 +426,13 @@ const BUBBLE_COLORS = ['#4fa8e8','#ff6f9c','#5cb85c','#ffd23f','#a06cd5','#ff8c4
 const BUBBLE_EMOJI = ['🫧','⭐','💙','🌟'];
 
 function spawnBubble(){
-  const b = document.createElement('div');
+  const areaWidth = bubbleArea.clientWidth || window.innerWidth;
   const size = 40 + Math.random()*60;
+  const maxLeft = Math.max(0, areaWidth - size);
+  const b = document.createElement('div');
   b.className = 'bubble';
   b.style.width = size + 'px'; b.style.height = size + 'px';
-  b.style.left = (Math.random()*85) + '%';
+  b.style.left = (Math.random()*maxLeft) + 'px';
   b.style.bottom = '-80px';
   b.style.background = BUBBLE_COLORS[Math.floor(Math.random()*BUBBLE_COLORS.length)];
   b.textContent = Math.random() < 0.3 ? BUBBLE_EMOJI[Math.floor(Math.random()*BUBBLE_EMOJI.length)] : '';
