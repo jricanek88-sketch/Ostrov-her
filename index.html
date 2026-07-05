@@ -433,7 +433,7 @@ function spawnBubble(){
   b.style.bottom = '-80px';
   b.style.background = BUBBLE_COLORS[Math.floor(Math.random()*BUBBLE_COLORS.length)];
   b.textContent = Math.random() < 0.3 ? BUBBLE_EMOJI[Math.floor(Math.random()*BUBBLE_EMOJI.length)] : '';
-  const duration = 5 + Math.random()*4;
+  const duration = 2.6 + Math.random()*2.2;
   b.style.transition = `bottom ${duration}s linear, opacity .3s`;
   bubbleArea.appendChild(b);
   requestAnimationFrame(() => { b.style.bottom = '110%'; });
@@ -449,7 +449,7 @@ function spawnBubble(){
 }
 function startBubbles(){
   if(bubbleInterval) return;
-  bubbleInterval = setInterval(spawnBubble, 700);
+  bubbleInterval = setInterval(spawnBubble, 500);
 }
 function stopBubbles(){
   if(bubbleInterval){ clearInterval(bubbleInterval); bubbleInterval = null; }
@@ -517,15 +517,15 @@ newPuzzle();
    5) ZVUKY ZVÍŘAT - poslechni a hádej
 ============================================================ */
 const ANIMALS = [
-  { emoji:'🐶', name:'Pes', sound:'Haf haf!' },
-  { emoji:'🐱', name:'Kočka', sound:'Mňau mňau!' },
-  { emoji:'🐄', name:'Kráva', sound:'Búúú!' },
-  { emoji:'🐴', name:'Kůň', sound:'Íhahá!' },
-  { emoji:'🐷', name:'Prase', sound:'Chro chro!' },
-  { emoji:'🐑', name:'Ovce', sound:'Bééé!' },
-  { emoji:'🐸', name:'Žába', sound:'Kvák kvák!' },
-  { emoji:'🐔', name:'Slepice', sound:'Kokodák!' },
-  { emoji:'🦆', name:'Kachna', sound:'Kvák kvák!' }
+  { emoji:'🐶', name:'Pes', sound:'Haf, haf!', rate:1.1, pitch:1.0 },
+  { emoji:'🐱', name:'Kočka', sound:'Mňau, mňau!', rate:0.95, pitch:1.3 },
+  { emoji:'🐄', name:'Kráva', sound:'Búúú!', rate:0.65, pitch:0.55 },
+  { emoji:'🐴', name:'Kůň', sound:'Íhahá!', rate:0.9, pitch:0.8 },
+  { emoji:'🐷', name:'Prase', sound:'Chro, chro!', rate:0.85, pitch:0.75 },
+  { emoji:'🐑', name:'Ovce', sound:'Bééé!', rate:0.8, pitch:1.1 },
+  { emoji:'🐸', name:'Žába', sound:'Kvák, kvák!', rate:1.0, pitch:0.7 },
+  { emoji:'🐔', name:'Slepice', sound:'Kokodák!', rate:1.15, pitch:1.35 },
+  { emoji:'🦆', name:'Kachna', sound:'Kach, kach!', rate:1.15, pitch:1.15 }
 ];
 const animalGrid = document.getElementById('animalGrid');
 const speechBubble = document.getElementById('speechBubble');
@@ -540,10 +540,23 @@ ANIMALS.forEach(a => {
   animalButtons.push(btn);
 });
 
-function playSound(sound){
+let czechVoice = null;
+function loadCzechVoice(){
+  const voices = window.speechSynthesis.getVoices();
+  czechVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('cs')) || null;
+}
+if('speechSynthesis' in window){
+  loadCzechVoice();
+  window.speechSynthesis.onvoiceschanged = loadCzechVoice;
+}
+
+function playSound(animal){
   try{
-    const u = new SpeechSynthesisUtterance(sound);
-    u.lang = 'cs-CZ'; u.rate = 0.85; u.pitch = 1.2;
+    const u = new SpeechSynthesisUtterance(animal.sound);
+    u.lang = 'cs-CZ';
+    if(czechVoice) u.voice = czechVoice;
+    u.rate = animal.rate || 1;
+    u.pitch = animal.pitch || 1;
     window.speechSynthesis.speak(u);
   }catch(e){}
 }
@@ -551,7 +564,7 @@ function playSound(sound){
 function newAnimalRound(){
   currentAnimal = ANIMALS[Math.floor(Math.random()*ANIMALS.length)];
   animalButtons.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
-  playSound(currentAnimal.sound);
+  playSound(currentAnimal);
 }
 
 function checkGuess(a, btn){
@@ -570,7 +583,7 @@ function checkGuess(a, btn){
   }
 }
 
-playSoundBtn.addEventListener('click', () => { if(currentAnimal) playSound(currentAnimal.sound); });
+playSoundBtn.addEventListener('click', () => { if(currentAnimal) playSound(currentAnimal); });
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
