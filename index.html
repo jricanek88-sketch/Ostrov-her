@@ -40,8 +40,8 @@
     font-size:5.5vw; font-weight:800; color:#2c5a1f; text-shadow:1px 2px 0 #ffffffcc;
     background:#ffffffcc; padding:2px 16px; border-radius:20px; white-space:nowrap;
   }
-  #islandMap{ position:relative; width:100vw; margin:0; }
-  #islandImg{ display:block; width:100%; height:auto; user-select:none; pointer-events:none; }
+  #islandMap{ position:absolute; inset:0; overflow:hidden; }
+  #islandImg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; user-select:none; pointer-events:none; }
 
   .node{
     position:absolute; display:flex; flex-direction:column; align-items:center; gap:4px;
@@ -137,23 +137,23 @@
   <div id="islandTitle">🏝️ Ostrov her</div>
   <div id="islandMap">
     <img id="islandImg" src="island-bg.png" alt="Ostrov">
-    <div class="node" data-screen="screen-coloring" style="left:62.5%; top:29.2%;">
+    <div class="node" data-screen="screen-coloring" data-px="62.5" data-py="29.2">
       <img class="stoneIcon" src="icon-coloring.png" alt="Vybarvování">
       <div class="nodeLabel">Vybarvování</div>
     </div>
-    <div class="node" data-screen="screen-memory" style="left:39.1%; top:42.1%;">
+    <div class="node" data-screen="screen-memory" data-px="39.1" data-py="42.1">
       <img class="stoneIcon" src="icon-memory.png" alt="Pexeso">
       <div class="nodeLabel">Pexeso</div>
     </div>
-    <div class="node" data-screen="screen-bubbles" style="left:69.9%; top:53.7%;">
+    <div class="node" data-screen="screen-bubbles" data-px="69.9" data-py="53.7">
       <img class="stoneIcon" src="icon-bubbles.png" alt="Bubliny">
       <div class="nodeLabel">Bubliny</div>
     </div>
-    <div class="node" data-screen="screen-puzzle" style="left:42.7%; top:71.9%;">
+    <div class="node" data-screen="screen-puzzle" data-px="42.7" data-py="71.9">
       <img class="stoneIcon" src="icon-puzzle.png" alt="Puzzle">
       <div class="nodeLabel">Puzzle</div>
     </div>
-    <div class="node withStone" data-screen="screen-animals" style="left:50%; top:89%;">
+    <div class="node withStone" data-screen="screen-animals" data-px="50" data-py="89">
       <img class="stone" src="stone.png" alt="">
       <img class="stoneIcon" src="icon-paw.png" alt="Zvířátka">
       <div class="nodeLabel">Zvířátka</div>
@@ -223,6 +223,29 @@ document.querySelectorAll('.node').forEach(n => {
 document.querySelectorAll('[data-back]').forEach(b => {
   b.addEventListener('click', () => showScreen('screen-home'));
 });
+
+/* ---------- Přepočet pozice kamenů podle skutečně vykresleného (ořezaného) obrázku ostrova ---------- */
+function layoutIslandNodes(){
+  const wrap = document.getElementById('islandMap');
+  const img = document.getElementById('islandImg');
+  if(!img.naturalWidth || !wrap.clientWidth) return;
+  const wrapW = wrap.clientWidth, wrapH = wrap.clientHeight;
+  const scale = Math.max(wrapW / img.naturalWidth, wrapH / img.naturalHeight);
+  const renderedW = img.naturalWidth * scale;
+  const renderedH = img.naturalHeight * scale;
+  const offsetX = (wrapW - renderedW) / 2;
+  const offsetY = (wrapH - renderedH) / 2;
+  document.querySelectorAll('.node').forEach(n => {
+    const xp = parseFloat(n.dataset.px), yp = parseFloat(n.dataset.py);
+    n.style.left = (offsetX + (xp / 100) * renderedW) + 'px';
+    n.style.top = (offsetY + (yp / 100) * renderedH) + 'px';
+  });
+}
+const islandImgEl = document.getElementById('islandImg');
+if(islandImgEl.complete) layoutIslandNodes();
+islandImgEl.addEventListener('load', layoutIslandNodes);
+window.addEventListener('resize', layoutIslandNodes);
+window.addEventListener('orientationchange', layoutIslandNodes);
 
 function getVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
 const COLORS = { 1:getVar('--c1'),2:getVar('--c2'),3:getVar('--c3'),4:getVar('--c4'),5:getVar('--c5'),6:getVar('--c6'),7:getVar('--c7'),8:getVar('--c8'),9:getVar('--c9') };
@@ -436,7 +459,7 @@ function spawnBubble(){
   b.style.bottom = '-80px';
   b.style.background = BUBBLE_COLORS[Math.floor(Math.random()*BUBBLE_COLORS.length)];
   b.textContent = Math.random() < 0.3 ? BUBBLE_EMOJI[Math.floor(Math.random()*BUBBLE_EMOJI.length)] : '';
-  const duration = 2.6 + Math.random()*2.2;
+  const duration = 1.6 + Math.random()*1.4;
   b.style.transition = `bottom ${duration}s linear, opacity .3s`;
   bubbleArea.appendChild(b);
   requestAnimationFrame(() => { b.style.bottom = '110%'; });
@@ -452,7 +475,7 @@ function spawnBubble(){
 }
 function startBubbles(){
   if(bubbleInterval) return;
-  bubbleInterval = setInterval(spawnBubble, 500);
+  bubbleInterval = setInterval(spawnBubble, 350);
 }
 function stopBubbles(){
   if(bubbleInterval){ clearInterval(bubbleInterval); bubbleInterval = null; }
