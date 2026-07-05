@@ -1,0 +1,15 @@
+{
+  "name": "Ostrov her",
+  "short_name": "Ostrov her",
+  "description": "Vybarvování, pexeso, bubliny, puzzle a zvířátka pro nejmenší",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#8fd9ff",
+  "theme_color": "#8fd9ff",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
