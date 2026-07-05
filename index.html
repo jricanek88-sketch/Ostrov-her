@@ -404,7 +404,7 @@ let memLock = false;
 
 function newMemoryGame(){
   memGrid.innerHTML = ''; memFlipped = []; memLock = false;
-  const chosen = shuffle([...MEM_EMOJIS]).slice(0, 3);
+  const chosen = shuffle([...MEM_EMOJIS]).slice(0, 4);
   const deck = shuffle([...chosen, ...chosen]);
   deck.forEach(emoji => {
     const card = document.createElement('div'); card.className = 'card'; card.dataset.emoji = emoji;
@@ -428,7 +428,7 @@ function flipCard(card){
       a.classList.add('matched'); b.classList.add('matched');
       memFlipped = []; memLock = false;
       if(memGrid.querySelectorAll('.card.matched').length === memGrid.children.length){
-        setTimeout(celebrate, 300);
+        setTimeout(() => { celebrate(); setTimeout(newMemoryGame, 1500); }, 300);
       }
     } else {
       setTimeout(() => { a.classList.remove('flipped'); b.classList.remove('flipped'); memFlipped = []; memLock = false; }, 900);
@@ -530,7 +530,7 @@ function placeIntoSlot(slot){
     slot.appendChild(puzzleSelected.firstChild);
     puzzleSelected.remove();
     puzzleSelected = null;
-    if(puzzleTray.children.length === 0) setTimeout(celebrate, 300);
+    if(puzzleTray.children.length === 0) setTimeout(() => { celebrate(); setTimeout(newPuzzle, 1500); }, 300);
   } else {
     slot.style.animation = 'shake .3s ease';
     setTimeout(() => { slot.style.animation = ''; }, 300);
