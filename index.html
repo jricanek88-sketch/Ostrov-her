@@ -108,7 +108,7 @@
 
   /* ---------- BUBBLES ---------- */
   #screen-bubbles{ background:linear-gradient(180deg,#bfe9ff,#eaf9ff); justify-content:flex-start; }
-  #bubbleArea{ position:relative; width:100%; height:100%; }
+  #bubbleArea{ position:absolute; inset:0; width:100%; height:100%; }
   .bubble{ position:absolute; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:6vw; box-shadow:inset -6px -6px 12px rgba(255,255,255,0.5), 0 4px 10px rgba(0,0,0,0.1); }
   .popCount{ position:fixed; top:2vh; right:3vw; background:#ffffffcc; padding:8px 18px; border-radius:20px; font-weight:800; font-size:4.5vw; z-index:20; }
 
@@ -197,7 +197,8 @@
 <!-- ============ ANIMAL SOUNDS ============ -->
 <div class="screen" id="screen-animals">
   <button class="backBtn" data-back>⬅️</button>
-  <div id="title4" style="font-size:6.5vw;font-weight:800;color:var(--ink);margin:6vh 0 0 0;">🐾 Poznej zvířátko</div>
+  <div id="title4" style="font-size:6.5vw;font-weight:800;color:var(--ink);margin:5vh 0 0 0;">🐾 Poslouchej a hádej</div>
+  <button id="playSound" style="width:28vw;height:28vw;max-width:150px;max-height:150px;border-radius:50%;border:none;background:linear-gradient(135deg,#ffd23f,#ff8c42);font-size:14vw;box-shadow:0 8px 16px rgba(0,0,0,0.2);margin:3vh 0;">🔊</button>
   <div id="animalGrid"></div>
 </div>
 
@@ -213,6 +214,7 @@ function showScreen(id){
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if(id === 'screen-bubbles') startBubbles(); else stopBubbles();
+  if(id === 'screen-animals') newAnimalRound();
 }
 document.querySelectorAll('.node').forEach(n => {
   n.addEventListener('click', () => showScreen(n.dataset.screen));
@@ -457,41 +459,33 @@ function stopBubbles(){
 /* ============================================================
    4) PUZZLE
 ============================================================ */
-const PUZZLE_EMOJIS = ['🦁','🐶','🐱','🦋','🌻','🚗','🐟','🍎'];
+const PUZZLE_IMAGES = ['island-bg.png', 'stone.png'];
 const puzzleTarget = document.getElementById('puzzleTarget');
 const puzzleTray = document.getElementById('puzzleTray');
 let puzzleSelected = null;
 
-function buildPuzzlePiece(emoji, quadrant, boxSize){
-  const wrap = document.createElement('div');
-  wrap.style.width = boxSize + 'px'; wrap.style.height = boxSize + 'px';
-  wrap.style.position = 'relative'; wrap.style.overflow = 'hidden';
-  const inner = document.createElement('div');
-  inner.className = 'pieceEmoji';
-  inner.textContent = emoji;
-  inner.style.fontSize = (boxSize*2) + 'px';
-  inner.style.width = (boxSize*2) + 'px'; inner.style.height = (boxSize*2) + 'px';
+function buildPuzzlePiece(imgUrl, quadrant){
   const qx = quadrant % 2, qy = Math.floor(quadrant/2);
-  inner.style.left = (-qx*boxSize) + 'px';
-  inner.style.top = (-qy*boxSize) + 'px';
-  wrap.appendChild(inner);
-  return wrap;
+  const div = document.createElement('div');
+  div.style.width = '100%'; div.style.height = '100%';
+  div.style.backgroundImage = `url('${imgUrl}')`;
+  div.style.backgroundSize = '200% 200%';
+  div.style.backgroundPosition = `${qx*100}% ${qy*100}%`;
+  return div;
 }
 
 function newPuzzle(){
   puzzleTarget.innerHTML = ''; puzzleTray.innerHTML = ''; puzzleSelected = null;
-  const emoji = PUZZLE_EMOJIS[Math.floor(Math.random()*PUZZLE_EMOJIS.length)];
-  const boxSize = Math.min(150, window.innerWidth*0.28) - 6;
-  const slots = [];
+  const imgUrl = PUZZLE_IMAGES[Math.floor(Math.random()*PUZZLE_IMAGES.length)];
   for(let i=0;i<4;i++){
     const slot = document.createElement('div'); slot.className = 'slot'; slot.dataset.quadrant = i;
     slot.addEventListener('click', () => placeIntoSlot(slot));
-    puzzleTarget.appendChild(slot); slots.push(slot);
+    puzzleTarget.appendChild(slot);
   }
   const order = shuffle([0,1,2,3]);
   order.forEach(q => {
     const piece = document.createElement('div'); piece.className = 'piece'; piece.dataset.quadrant = q;
-    piece.appendChild(buildPuzzlePiece(emoji, q, boxSize));
+    piece.appendChild(buildPuzzlePiece(imgUrl, q));
     piece.addEventListener('click', () => selectPiece(piece));
     puzzleTray.appendChild(piece);
   });
@@ -520,7 +514,7 @@ document.getElementById('puzzleNew').addEventListener('click', newPuzzle);
 newPuzzle();
 
 /* ============================================================
-   5) ZVUKY ZVÍŘAT
+   5) ZVUKY ZVÍŘAT - poslechni a hádej
 ============================================================ */
 const ANIMALS = [
   { emoji:'🐶', name:'Pes', sound:'Haf haf!' },
@@ -535,22 +529,48 @@ const ANIMALS = [
 ];
 const animalGrid = document.getElementById('animalGrid');
 const speechBubble = document.getElementById('speechBubble');
+const playSoundBtn = document.getElementById('playSound');
+let currentAnimal = null;
+const animalButtons = [];
+
 ANIMALS.forEach(a => {
   const btn = document.createElement('button'); btn.className = 'animalBtn'; btn.textContent = a.emoji;
-  btn.addEventListener('click', () => sayAnimal(a));
+  btn.addEventListener('click', () => checkGuess(a, btn));
   animalGrid.appendChild(btn);
+  animalButtons.push(btn);
 });
-function sayAnimal(a){
-  speechBubble.textContent = a.emoji + ' ' + a.sound;
-  speechBubble.style.transition = 'transform .3s cubic-bezier(.34,1.56,.64,1)';
-  speechBubble.style.transform = 'translate(-50%,0) scale(1)';
-  setTimeout(() => { speechBubble.style.transform = 'translate(-50%,0) scale(0)'; }, 1400);
+
+function playSound(sound){
   try{
-    const u = new SpeechSynthesisUtterance(a.sound);
-    u.lang = 'cs-CZ'; u.rate = 0.9; u.pitch = 1.2;
+    const u = new SpeechSynthesisUtterance(sound);
+    u.lang = 'cs-CZ'; u.rate = 0.85; u.pitch = 1.2;
     window.speechSynthesis.speak(u);
   }catch(e){}
 }
+
+function newAnimalRound(){
+  currentAnimal = ANIMALS[Math.floor(Math.random()*ANIMALS.length)];
+  animalButtons.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+  playSound(currentAnimal.sound);
+}
+
+function checkGuess(a, btn){
+  if(!currentAnimal) return;
+  if(a.name === currentAnimal.name){
+    speechBubble.textContent = a.emoji + ' ' + a.name + '!';
+    speechBubble.style.transition = 'transform .3s cubic-bezier(.34,1.56,.64,1)';
+    speechBubble.style.transform = 'translate(-50%,0) scale(1)';
+    setTimeout(() => { speechBubble.style.transform = 'translate(-50%,0) scale(0)'; }, 1300);
+    celebrate();
+    animalButtons.forEach(b => { b.disabled = true; });
+    setTimeout(newAnimalRound, 1600);
+  } else {
+    btn.style.animation = 'shake .3s ease';
+    setTimeout(() => { btn.style.animation = ''; }, 300);
+  }
+}
+
+playSoundBtn.addEventListener('click', () => { if(currentAnimal) playSound(currentAnimal.sound); });
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
